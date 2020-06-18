@@ -1,0 +1,84 @@
+---
+output: html_document
+---
+
+# Plotly Plot
+## Date: June 18, 2020
+
+This plot shows the life expectancy at birth (total years) for different categories of countries. This interactive plot contains data from year 1990 till 2018 and shows how life expectancy changes for each category. 
+
+Data is downloaded from <a href='https://datacatalog.worldbank.org/dataset/population-estimates-and-projections'> The World Bank </a>
+
+Click on "Play" to see the changes through the years.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r, message=F, error=F, warning=F}
+library(tidyr)
+library(plotly)
+library(ggplot2)
+```
+
+```{r}
+data <- read.csv(file="D:/Courses/Data Science_SPECIALIZATION/9-Data Products/Plotly/Population-Estimates_CSV/Population-EstimatesData.csv")
+
+
+data <- data %>%
+  filter(Indicator.Name=="Life expectancy at birth, total (years)") %>%
+  filter (Country.Code=="FCS"|Country.Code=="HPC"|
+            Country.Code=="HIC"|Country.Code=="LIC"|
+            Country.Code=="LMC"|Country.Code=="MIC"|
+            Country.Code=="UMC")
+
+
+data <- data[,-c(64:96)]
+data <- data[, -c(5:34)]
+```
+
+
+```{r}
+dataG <- data %>%
+  gather("Year", "LifeExpectancy", 5:33) 
+
+dataG$Year <- gsub("X", "", dataG$Year)
+
+dataG$Year <- as.factor(dataG$Year)
+
+names(dataG) <- c("Name", "Code", "Indicator", "IndCode", "Year", "LifeExpectancy")
+
+dataG$Name <- factor(dataG$Name,  ordered = T,
+                         levels = c("Fragile and conflict affected situations",
+                                    "Heavily indebted poor countries (HIPC)",
+                                    "Low income","Lower middle income","Middle income"
+                                    ,"Upper middle income","High income"))
+
+dataG$Name <- levels(droplevels(dataG$Name))
+
+```
+
+
+```{r}
+dataG %>%
+plot_ly(x = ~Name, y=~LifeExpectancy, size= ~LifeExpectancy, color=~Name,
+          text = ~paste(Name,'</br></br>', LifeExpectancy), hoverinfo="text") %>%
+  add_markers(frame = ~Year, ids = ~Name) %>%
+  animation_opts(1000, easing = "elastic", redraw = FALSE) %>%
+  animation_button(
+    x = 1, xanchor = "right", y = 0, yanchor = "bottom"
+  ) %>%
+  animation_slider(
+    currentvalue = list(prefix = "YEAR ", font = list(color="red"))
+  ) %>%
+  layout(xaxis= list(showticklabels = FALSE, title=""),
+         legend = list(orientation = "h",   # show entries horizontally
+                     xanchor = "center",  # use center of legend as anchor
+                     x = 0.5, y=0), font = list(
+    family = "sans-serif",
+    size = 9,
+    color = "#000") )
+
+
+```
+
